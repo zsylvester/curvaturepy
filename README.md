@@ -1,9 +1,9 @@
 # curvaturepy
 Code for calculating curvature and migration rate in meandering rivers
 
-Code and data used for the analysis of the relationship between curvature and migration rate, as described in Sylvester et al., (2019), "High curvatures drive river meandering".
+Code and data used for the analysis of the relationship between curvature and migration rate, as described in Sylvester et al., (2019), ["High curvatures drive river meandering"](https://pubs.geoscienceworld.org/gsa/geology/article/568705/high-curvatures-drive-river-meandering).
 
-Assumes that centerlines for two time steps have been interpreted; the data for these centerlines is stored in the 'data' folder. Each Landsat scene has a corresponding folder under 'data', named after the rivers that are covered. For each scene, there is a 'csv_files' folder that contains the files with the UTM coordinates of the centerlines and banks; the list of indices that define bends and the corresponding 'points of zero migration'.
+Assumes that centerlines for two time steps have been interpreted; the data for these centerlines is stored in the 'data' folder. Each Landsat scene has a corresponding folder under 'data', named after the rivers that are covered. For each scene, there is a 'csv_files' folder that contains the files with the UTM coordinates of the centerlines and banks; the list of indices that define bends and the corresponding 'points of zero migration'. Shapefiles of centerlines and banks are also available.
 
 Key functions are in the 'cline_analysis.py' module. 
 
