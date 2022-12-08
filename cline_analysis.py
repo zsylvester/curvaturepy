@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from dp_python_master.dpcore import dp
+# from dp_python_master.dpcore import dp
+from dtw import *
 import os
 import datetime
 import pandas as pd
 from scipy.signal import correlate
+from scipy.spatial import distance
 
 def load_data(dirname):
     fnames = os.listdir(dirname)
@@ -54,7 +56,7 @@ def load_data(dirname):
         dates.append(date)
     return fnames,clxs,clys,rbxs,lbxs,rbys,lbys,curvatures,ages,widths,dates
 
-def correlate_clines(x1,x2,y1,y2,penalty):
+def correlate_clines(x1, x2, y1, y2):
     """use dynamic time warping to correlate centerlines
     inputs:
     x1, y1 - coordinates of first centerline
@@ -64,39 +66,40 @@ def correlate_clines(x1,x2,y1,y2,penalty):
     p - indices of correlation in second centerline
     q - indices of correlation in first centerline
     sm - distance matrix"""
-    c = len(x1)
-    r = len(x2)
-    sm = np.zeros((r,c))
-    for i in range(0,r):
-        sm[i,:] = ((x1-x2[i])**2 + (y1-y2[i])**2)**0.5
-    p,q,C,phi = dp(sm,penalty=penalty,gutter=0.0)
-    return p,q,sm
-  
-def get_migr_rate(x1,y1,x2,y2,years,penalty):
+    X = np.vstack((x1,y1))
+    Y = np.vstack((x2,y2))
+    sm = distance.cdist(X.T, Y.T) # similarity matrix
+    alignment = dtw(sm, step_pattern=symmetric1) # dynamic time warping
+    p = alignment.index1[::-1] # correlation indices for first curve
+    q = alignment.index2[::-1] # correlation indices for second curve
+    return p, q, sm
+
+def get_migr_rate(x1, x2, y1, y2, years):
     """use dynamic time warping to correlate centerlines
     inputs:
     x1, y1 - coordinates of first centerline
     x2, y2 - coordinates of second centerline
     years - time between the two centerlines, in years
-    penalty - parameter that forces more parallel correlation (or not)
     outputs:
     migr_rate - migration rate (in m/years)
     migr_sign - migration sign
     p - indices of correlation in second centerline
     q - indices of correlation in first centerline"""
-    p,q,sm = correlate_clines(x1,x2,y1,y2,penalty)
-    qn = np.delete(np.array(q),np.where(np.diff(q)==0)[0]+1)
-    pn = np.delete(np.array(p),np.where(np.diff(q)==0)[0]+1)
+    p, q, sm = correlate_clines(x1, x2, y1, y2)
+    p = p[::-1] # p and q need to be flipped!
+    q = q[::-1]
+    qn = np.delete(np.array(q),np.where(np.diff(p)==0)[0]+1)
+    pn = np.delete(np.array(p),np.where(np.diff(p)==0)[0]+1)
     xa = x1[:-1]
     xb = x1[1:]
     ya = y1[:-1]
     yb = y1[1:]
-    x = x2[pn][1:]
-    y = y2[pn][1:]
-    migr_sign = np.sign((x-xa)*(yb-ya) - (y-ya)*(xb-xa))
-    migr_rate = migr_sign*sm[pn,qn][1:]/years
-    migr_rate = np.hstack((0,migr_rate))
-    return migr_rate, migr_sign, p, q
+    x = x2[qn][1:]
+    y = y2[qn][1:]
+    migr_sign = np.sign((x-xa) * (yb-ya) - (y-ya) * (xb-xa))
+    migr_sign = np.hstack((migr_sign[0], migr_sign))
+    migr_dist = migr_sign * sm[pn, qn] / years
+    return migr_dist, migr_sign, p, q
   
 def compute_curvature(x,y):
     """compute curvature of curve defined by coordinates x and y
